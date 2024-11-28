@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 
 from pydantic import EmailStr
@@ -43,7 +44,8 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    items: list['Item'] = Relationship(back_populates="owner", cascade_delete=True)
+    analyses: list['Analysis'] = Relationship(back_populates="user", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -91,6 +93,56 @@ class ItemPublic(ItemBase):
 class ItemsPublic(SQLModel):
     data: list[ItemPublic]
     count: int
+
+# Sample of air
+class Sample(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=63)
+    description: str | None = Field(default=None, max_length=255)
+    sampled_date: datetime = Field(default_factory=datetime.now)
+
+    measurements: list["Measurement"] = Relationship(back_populates="sample")
+    analyses: list["Analysis"] = Relationship(back_populates="sample")
+    flasks: list["Flask"] = Relationship(back_populates="sample")
+
+# When measuring a sample on an instrument, if no sample is given, it can also be a air or blank measurement
+class Measurement(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=63)
+    description: str | None = Field(default=None, max_length=255)
+
+    sample_id: uuid.UUID | None = Field(default=None, foreign_key="sample.id")
+    sample: Sample | None = Relationship(back_populates="measurements")
+
+
+class Analysis(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=63)
+    description: str | None = Field(default=None, max_length=255)
+
+    user_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    user: User | None = Relationship(back_populates="analyses")
+
+    sample_id: uuid.UUID | None = Field(default=None, foreign_key="sample.id")
+    sample: Sample | None = Relationship(back_populates="analyses")
+
+class Location(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=63)
+    description: str | None = Field(default=None, max_length=255)
+
+    flasks: list["Flask"] = Relationship(back_populates="location")
+
+
+class Flask(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=255)
+
+    location_id: uuid.UUID | None = Field(default=None, foreign_key="location.id")
+    location: Location | None = Relationship(back_populates="flasks")
+
+    sample_id: uuid.UUID | None = Field(default=None, foreign_key="sample.id")
+    sample: Sample | None = Relationship(back_populates="flasks")
 
 
 # Generic message

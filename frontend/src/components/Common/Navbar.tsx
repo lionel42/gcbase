@@ -1,27 +1,42 @@
-import type { ComponentType, ElementType } from "react"
+import type { ComponentType, ElementType } from "react";
 
-import { Button, Flex, Icon, useDisclosure } from "@chakra-ui/react"
-import { FaPlus } from "react-icons/fa"
+import {
+  Button,
+  Flex,
+  Icon,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { FaPlus, FaSearch } from "react-icons/fa";
 
 interface NavbarProps {
-  type: string
-  addModalAs: ComponentType | ElementType
+  type: string;
+  addModalAs: ComponentType | ElementType;
+  addSearchAs?: ComponentType | ElementType;
 }
 
-const Navbar = ({ type, addModalAs }: NavbarProps) => {
-  const addModal = useDisclosure()
+const Navbar = ({ type, addModalAs, addSearchAs }: NavbarProps) => {
+  const addModal = useDisclosure();
 
-  const AddModal = addModalAs
+  const AddModal = addModalAs;
+  const AddSearch = addSearchAs || (() => null);
   return (
     <>
       <Flex py={8} gap={4}>
-        {/* TODO: Complete search functionality */}
-        {/* <InputGroup w={{ base: '100%', md: 'auto' }}>
-                    <InputLeftElement pointerEvents='none'>
-                        <Icon as={FaSearch} color='ui.dim' />
-                    </InputLeftElement>
-                    <Input type='text' placeholder='Search' fontSize={{ base: 'sm', md: 'inherit' }} borderRadius='8px' />
-                </InputGroup> */}
+        <InputGroup w={{ base: "100%", md: "auto" }}>
+          <InputLeftElement pointerEvents="none">
+            <Icon as={FaSearch} color="ui.dim" />
+          </InputLeftElement>
+          <Input
+            type="text"
+            placeholder="Search"
+            fontSize={{ base: "sm", md: "inherit" }}
+            borderRadius="8px"
+          />
+        </InputGroup>
+        <AddSearch />
         <Button
           variant="primary"
           gap={1}
@@ -33,7 +48,7 @@ const Navbar = ({ type, addModalAs }: NavbarProps) => {
         <AddModal isOpen={addModal.isOpen} onClose={addModal.onClose} />
       </Flex>
     </>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

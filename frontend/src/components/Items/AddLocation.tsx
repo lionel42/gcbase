@@ -11,21 +11,20 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Select,
 } from "@chakra-ui/react"
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type ApiError, type ItemCreate, ItemsService } from "../../client"
+import { type ApiError, type LocationCreate, LocationsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface AddItemProps {
+interface AddLocationProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const AddItem = ({ isOpen, onClose }: AddItemProps) => {
+const AddLocation = ({ isOpen, onClose }: AddLocationProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -33,21 +32,20 @@ const AddItem = ({ isOpen, onClose }: AddItemProps) => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ItemCreate>({
+  } = useForm<LocationCreate>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      title: "",
+      name: "",
       description: "",
-      type: "other",
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ItemCreate) =>
-      ItemsService.createItem({ requestBody: data }),
+    mutationFn: (data: LocationCreate) =>
+      LocationsService.createLocation({ requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Item created successfully.", "success")
+      showToast("Success!", "Location created successfully.", "success")
       reset()
       onClose()
     },
@@ -55,16 +53,11 @@ const AddItem = ({ isOpen, onClose }: AddItemProps) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["locations"] })
     },
   })
 
-  const itemTypesQuery = useQuery({
-    queryKey: ["itemTypes"],
-    queryFn: () => ItemsService.getTypes(),
-  })
-
-  const onSubmit: SubmitHandler<ItemCreate> = (data) => {
+  const onSubmit: SubmitHandler<LocationCreate> = (data) => {
     mutation.mutate(data)
   }
 
@@ -78,25 +71,23 @@ const AddItem = ({ isOpen, onClose }: AddItemProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Add Item</ModalHeader>
+          <ModalHeader>Add Location</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-
             <FormControl isRequired isInvalid={!!errors.title}>
-              <FormLabel htmlFor="title">Title</FormLabel>
+              <FormLabel htmlFor="name">Name</FormLabel>
               <Input
-                id="title"
-                {...register("title", {
-                  required: "Title is required.",
+                id="name"
+                {...register("name", {
+                  required: "Name is required.",
                 })}
-                placeholder="Title"
+                placeholder="Name"
                 type="text"
               />
               {errors.title && (
                 <FormErrorMessage>{errors.title.message}</FormErrorMessage>
               )}
             </FormControl>
-
             <FormControl mt={4}>
               <FormLabel htmlFor="description">Description</FormLabel>
               <Input
@@ -105,21 +96,6 @@ const AddItem = ({ isOpen, onClose }: AddItemProps) => {
                 placeholder="Description"
                 type="text"
               />
-            </FormControl>
-
-            <FormControl mt={4}>
-              <FormLabel htmlFor="type">Type</FormLabel>
-              <Select
-                id="type"
-                {...register("type")}
-                placeholder="other"                
-              >
-                {itemTypesQuery.data?.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </Select>
             </FormControl>
           </ModalBody>
 
@@ -135,4 +111,4 @@ const AddItem = ({ isOpen, onClose }: AddItemProps) => {
   )
 }
 
-export default AddItem
+export default AddLocation

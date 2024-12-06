@@ -6,10 +6,12 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 class ItemType(str, Enum):
+    other = "other"
     flask = "flask"
     pump = "pump"
     computer = "computer"
-    other = "other"
+
+item_types = [item_type.value for item_type in ItemType]
 
 
 class ItemStatus(str, Enum):
@@ -193,7 +195,7 @@ class LogPublic(LogBase):
 
 class ItemLogsPublic(SQLModel):
     item_id: uuid.UUID
-    data: list[LogPublic]
+    logs: list[LogPublic]
     count: int
 
 

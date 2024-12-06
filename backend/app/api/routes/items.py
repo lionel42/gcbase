@@ -17,6 +17,7 @@ from app.models import (
     Message,
     LogPublic,
     ItemLog,
+    item_types,
 )
 
 router = APIRouter()
@@ -109,7 +110,7 @@ def delete_item(
     item = session.get(Item, id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if not current_user.is_superuser and (item.owner_id != current_user.id):
+    if not current_user.is_superuser:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     session.delete(item)
     session.commit()
@@ -173,7 +174,7 @@ def read_item_logs(
         )
         for log in item.logs
     ]
-    return ItemLogsPublic(data=logs, count=len(logs), item_id=item.id)
+    return ItemLogsPublic(logs=logs, count=len(logs), item_id=item.id)
 
 
 @router.post("/logs/{item_id}", response_model=LogPublic)
@@ -205,3 +206,11 @@ def create_item_log(
         date=log.date,
         operator_name=log.operator.full_name,
     )
+
+
+@router.get("/types/", response_model=list[str])
+def get_types(session: SessionDep) -> list[str]:
+    """
+    Retrieve item types.
+    """
+    return item_types

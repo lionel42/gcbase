@@ -89,12 +89,19 @@ function ItemDetails({ item }: { item: ItemPublic }) {
 
   const sendLogMutation = useMutation({
     mutationKey: ["sendLog", item.id],
-    mutationFn: (log: LogCreate) =>
-      ItemsService.createItemLog({ requestBody: log }),
+    mutationFn: () => {
+      if (!newLogMessage) {
+        return Promise.reject(new Error("No log message provided"));
+      }
+      return ItemsService.createItemLog({
+        requestBody: { item_id: item.id, message: newLogMessage },
+      });
+    },
     onSuccess: () => {
       // update the log list
       queryClient.invalidateQueries({ queryKey: ["item_logs", item.id] });
       showToast("Success!", "Log created successfully.", "success");
+      setNewLogMessage("");
     },
     onError: (err: ApiError) => {
       console.log(err);
@@ -144,9 +151,10 @@ function ItemDetails({ item }: { item: ItemPublic }) {
     <>
       <Container maxW="full">
         <Box w={{ sm: "full", md: "50%" }}>
-            <Text fontSize="xl" color={color} w="auto" isTruncated>
-            <Text as="i"> {item?.type} </Text> : <Text as="b">{item?.title || "N/A"}</Text>
-            </Text>
+          <Text fontSize="xl" color={color} w="auto" isTruncated>
+            <Text as="i"> {item?.type} </Text> :{" "}
+            <Text as="b">{item?.title || "N/A"}</Text>
+          </Text>
           <Text fontSize="sm" color="ui.dim" w="auto" isTruncated>
             {item?.id}
           </Text>
@@ -165,7 +173,8 @@ function ItemDetails({ item }: { item: ItemPublic }) {
             color={!item?.status ? "ui.dim" : "inherit"}
             isTruncated
           >
-            <Text as="b"> Status </Text>: <Text as="i">{item?.status || "N/A"}</Text>
+            <Text as="b"> Status </Text>:{" "}
+            <Text as="i">{item?.status || "N/A"}</Text>
           </Text>
 
           <FormLabel color={color} htmlFor="location" fontWeight="bold">
@@ -223,15 +232,17 @@ function ItemDetails({ item }: { item: ItemPublic }) {
                   id="newLog"
                   value={newLogMessage || ""}
                   onChange={(e) => setNewLogMessage(e.target.value)}
+                  // Register Ctrl + Enter to send the log
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.ctrlKey) {
+                      sendLogMutation.mutate();
+                    }
+                  }}
                 />
                 <Button
                   variant="primary"
                   onClick={() => {
-                    sendLogMutation.mutate({
-                      item_id: item.id,
-                      message: newLogMessage || "",
-                    });
-                    setNewLogMessage("");
+                    sendLogMutation.mutate();
                   }}
                 >
                   <Icon as={FaPaperPlane} />

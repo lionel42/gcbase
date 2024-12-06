@@ -1,9 +1,24 @@
 from datetime import datetime
 import uuid
-
+from enum import Enum
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
+
+class ItemType(str, Enum):
+    flask = "flask"
+    pump = "pump"
+    computer = "computer"
+    other = "other"
+
+
+class ItemStatus(str, Enum):
+    available = "available"
+    in_use = "in_use"
+    maintenance = "maintenance"
+    lost = "lost"
+    discarded = "discarded"
+    
 
 # Shared properties
 class UserBase(SQLModel):
@@ -44,7 +59,8 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list['Item'] = Relationship(back_populates="owner", cascade_delete=True)
+
+    logs: list['ItemLog'] = Relationship(back_populates="operator", cascade_delete=False)
     analyses: list['Analysis'] = Relationship(back_populates="user", cascade_delete=True)
 
 
@@ -58,10 +74,33 @@ class UsersPublic(SQLModel):
     count: int
 
 
+class LocationBase(SQLModel):
+    name: str = Field(min_length=1, max_length=63)
+    description: str | None = Field(default=None, max_length=255)
+
+class Location(LocationBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+    items: list["Item"] = Relationship(back_populates="location")
+
+class LocationCreate(LocationBase):
+    pass
+
+class LocationsPublic(SQLModel):
+    locations: dict[uuid.UUID, str]
+
+
+
 # Shared properties
 class ItemBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+
+    type: ItemType = Field(default=ItemType.other)
+    status: ItemStatus = Field(default=ItemStatus.available)
+
+
+
 
 
 # Properties to receive on item creation
@@ -73,21 +112,22 @@ class ItemCreate(ItemBase):
 class ItemUpdate(ItemBase):
     title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
 
+    location_id: uuid.UUID | None
 
 # Database model, database table inferred from class name
 class Item(ItemBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
+
+    location_id: uuid.UUID | None = Field(default=None, foreign_key="location.id")
+    location: Location | None = Relationship(back_populates="items")
+    logs: list["ItemLog"] = Relationship(back_populates="item", cascade_delete=True, sa_relationship_kwargs={"order_by": "desc(ItemLog.date)"})
 
 
 # Properties to return via API, id is always required
 class ItemPublic(ItemBase):
     id: uuid.UUID
-    owner_id: uuid.UUID
+    location_id: uuid.UUID | None
 
 
 class ItemsPublic(SQLModel):
@@ -126,23 +166,59 @@ class Analysis(SQLModel, table=True):
     sample_id: uuid.UUID | None = Field(default=None, foreign_key="sample.id")
     sample: Sample | None = Relationship(back_populates="analyses")
 
-class Location(SQLModel, table=True):
+
+class LogBase(SQLModel):
+    message: str = Field(max_length=2047)
+    # Date of the log entry
+    date: datetime = Field(default_factory=datetime.now)
+
+class ItemLog(LogBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(max_length=63)
-    description: str | None = Field(default=None, max_length=255)
+    # Date of when the log entry was registered
+    date_registered: datetime = Field(default_factory=datetime.now)
+    
+    operator_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    operator: User | None = Relationship(back_populates="logs")
 
-    flasks: list["Flask"] = Relationship(back_populates="location")
+    item_id: uuid.UUID | None = Field(default=None, foreign_key="item.id")
+    item: Item | None = Relationship(back_populates="logs")
+
+class LogCreate(LogBase):
+    item_id: uuid.UUID
+
+class LogPublic(LogBase):
+    id: uuid.UUID
+    operator_name: str | None
+    item_id: uuid.UUID | None
+
+class ItemLogsPublic(SQLModel):
+    item_id: uuid.UUID
+    data: list[LogPublic]
+    count: int
 
 
+
+# Database model, database table inferred from class name
 class Flask(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(max_length=255)
 
-    location_id: uuid.UUID | None = Field(default=None, foreign_key="location.id")
-    location: Location | None = Relationship(back_populates="flasks")
+    item_id: uuid.UUID | None = Field(default=None, foreign_key="item.id")
 
     sample_id: uuid.UUID | None = Field(default=None, foreign_key="sample.id")
     sample: Sample | None = Relationship(back_populates="flasks")
+
+
+# Properties to return via API, id is always required
+class FlaskPublic(ItemPublic):
+
+    sample_id: uuid.UUID | None
+
+
+class FlasksPublic(SQLModel):
+    data: list[FlaskPublic]
+    count: int
+
+
 
 
 # Generic message

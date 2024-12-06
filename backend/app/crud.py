@@ -7,10 +7,11 @@ from app.core.security import get_password_hash, verify_password
 from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
+def create_user(*, session: Session, user_create: UserCreate, disabled: bool = False) -> User:
     db_obj = User.model_validate(
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
+    db_obj.is_active = not disabled
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)

@@ -40,9 +40,9 @@ export type ItemsPublic = {
     count: number;
 };
 
-export type ItemStatus = 'available' | 'in_use' | 'maintenance' | 'lost' | 'discarded';
+export type ItemStatus = 'available' | 'used' | 'maintenance' | 'lost' | 'discarded';
 
-export type ItemType = 'flask' | 'pump' | 'computer' | 'other';
+export type ItemType = 'other' | 'flask' | 'pump' | 'computer';
 
 export type ItemUpdate = {
     title?: (string | null);
@@ -187,6 +187,13 @@ export type ItemsMoveItemData = {
 
 export type ItemsMoveItemResponse = (Location);
 
+export type ItemsChangeItemStatusData = {
+    itemId: string;
+    newStatus: ItemStatus;
+};
+
+export type ItemsChangeItemStatusResponse = (ItemPublic);
+
 export type ItemsReadItemLogsData = {
     itemId: string;
 };
@@ -200,6 +207,8 @@ export type ItemsCreateItemLogData = {
 export type ItemsCreateItemLogResponse = (LogPublic);
 
 export type ItemsGetTypesResponse = (Array<(string)>);
+
+export type ItemsGetStatusesResponse = (Array<(string)>);
 
 export type LocationsReadLocationsResponse = (LocationsPublic);
 

@@ -29,9 +29,9 @@ import { z } from "zod";
 import {
   type ApiError,
   type ItemPublic,
+  type ItemStatus,
   ItemsService,
   LocationsService,
-  type LogCreate,
   type LogPublic,
 } from "../../client";
 import ActionsMenu from "../../components/Common/ActionsMenu";
@@ -87,6 +87,11 @@ function ItemDetails({ item }: { item: ItemPublic }) {
 
   const locationsQuery = getLocationsQuery();
 
+  const itemStatusesQuery = useQuery({
+    queryKey: ["itemStatuses"],
+    queryFn: () => ItemsService.getStatuses(),
+  });
+
   const sendLogMutation = useMutation({
     mutationKey: ["sendLog", item.id],
     mutationFn: () => {
@@ -115,6 +120,19 @@ function ItemDetails({ item }: { item: ItemPublic }) {
     mutationKey: ["moveItem", item.id],
     mutationFn: (newLocation: string) =>
       ItemsService.moveItem({ itemId: item.id, newLocation }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["item_logs", item.id] });
+      queryClient.invalidateQueries({ queryKey: ["items", currentPage] });
+    },
+    onError: (err: ApiError) => {
+      handleError(err, showToast);
+    },
+  });
+
+  const changeStatusMutation = useMutation({
+    mutationKey: ["changeStatus", item.id],
+    mutationFn: (newStatus: ItemStatus) =>
+      ItemsService.changeItemStatus({ itemId: item.id, newStatus: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["item_logs", item.id] });
       queryClient.invalidateQueries({ queryKey: ["items", currentPage] });
@@ -167,15 +185,23 @@ function ItemDetails({ item }: { item: ItemPublic }) {
             {item?.description || "N/A"}
           </Text>
 
-          <Text
-            size="md"
-            py={2}
-            color={!item?.status ? "ui.dim" : "inherit"}
-            isTruncated
-          >
-            <Text as="b"> Status </Text>:{" "}
-            <Text as="i">{item?.status || "N/A"}</Text>
-          </Text>
+          <Flex align="center" py={2}>
+            <Text as="b"> Status </Text>: <Box mx={2} />
+            <Select
+              w="auto"
+              onChange={(e) => {
+                e.target.value &&
+                  changeStatusMutation.mutate(e.target.value as ItemStatus);
+              }}
+            >
+              {itemStatusesQuery.data &&
+                Object.entries(itemStatusesQuery.data).map(([id, name]) => (
+                  <option key={id} value={name} selected={id === item.status}>
+                    {name}
+                  </option>
+                ))}
+            </Select>
+          </Flex>
 
           <FormLabel color={color} htmlFor="location" fontWeight="bold">
             Location
@@ -219,9 +245,6 @@ function ItemDetails({ item }: { item: ItemPublic }) {
             </Flex>
           }
 
-          <FormLabel color={color} htmlFor="logs" fontWeight="bold">
-            Logs
-          </FormLabel>
           {logsQuery.data && logsQuery.data.count > 0 ? (
             <>
               <Flex py={2} direction="row" align="flex-start">
@@ -296,7 +319,14 @@ function ItemsTable({
     }
   }, [page, queryClient, hasNextPage]);
 
-  const columns = ["Title", "Description", "Location", "Type", "Actions"];
+  const columns = [
+    "Title",
+    "Description",
+    "Location",
+    "Type",
+    "Status",
+    "Actions",
+  ];
 
   return (
     <>
@@ -354,6 +384,13 @@ function ItemsTable({
                     maxWidth="150px"
                   >
                     {item.type || "N/A"}
+                  </Td>
+                  <Td
+                    color={!item.status ? "ui.dim" : "inherit"}
+                    isTruncated
+                    maxWidth="150px"
+                  >
+                    {item.status || "N/A"}
                   </Td>
                   <Td>
                     <ActionsMenu type={"Item"} value={item} />

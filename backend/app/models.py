@@ -15,12 +15,15 @@ item_types = [item_type.value for item_type in ItemType]
 
 
 class ItemStatus(str, Enum):
+
+    # Check after creation that the item don't contain special characters
     available = "available"
-    in_use = "in_use"
+    used = "used"
     maintenance = "maintenance"
     lost = "lost"
     discarded = "discarded"
-    
+
+item_statuses = [item_status.value for item_status in ItemStatus]
 
 # Shared properties
 class UserBase(SQLModel):

@@ -3,9 +3,8 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, ItemsMoveItemData, ItemsMoveItemResponse, ItemsReadItemLogsData, ItemsReadItemLogsResponse, ItemsCreateItemLogData, ItemsCreateItemLogResponse, ItemsGetTypesResponse, LocationsReadLocationsResponse, LocationsCreateLocationData, LocationsCreateLocationResponse, LocationsReadLocationData, LocationsReadLocationResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, ItemsMoveItemData, ItemsMoveItemResponse, ItemsChangeItemStatusData, ItemsChangeItemStatusResponse, ItemsReadItemLogsData, ItemsReadItemLogsResponse, ItemsCreateItemLogData, ItemsCreateItemLogResponse, ItemsGetTypesResponse, ItemsGetStatusesResponse, LocationsReadLocationsResponse, LocationsCreateLocationData, LocationsCreateLocationResponse, LocationsReadLocationData, LocationsReadLocationResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class ItemsService {
     /**
      * Read Items
@@ -127,11 +126,34 @@ export class ItemsService {
      */
     public static moveItem(data: ItemsMoveItemData): CancelablePromise<ItemsMoveItemResponse> {
         return __request(OpenAPI, {
-            method: 'POST',
+            method: 'PUT',
             url: '/api/v1/items/move/{item_id}_{new_location}',
             path: {
                 new_location: data.newLocation,
                 item_id: data.itemId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Change Item Status
+     * Change the status of an item.
+     * @param data The data for the request.
+     * @param data.itemId
+     * @param data.newStatus
+     * @returns ItemPublic Successful Response
+     * @throws ApiError
+     */
+    public static changeItemStatus(data: ItemsChangeItemStatusData): CancelablePromise<ItemsChangeItemStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/items/change_status/{item_id}_{new_status}',
+            path: {
+                item_id: data.itemId,
+                new_status: data.newStatus
             },
             errors: {
                 422: 'Validation Error'
@@ -190,6 +212,19 @@ export class ItemsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/items/types/'
+        });
+    }
+    
+    /**
+     * Get Statuses
+     * Retrieve item statuses.
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static getStatuses(): CancelablePromise<ItemsGetStatusesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/items/statuses/'
         });
     }
     

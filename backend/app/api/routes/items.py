@@ -18,6 +18,8 @@ from app.models import (
     LogPublic,
     ItemLog,
     item_types,
+    item_statuses,
+    ItemStatus
 )
 
 router = APIRouter()
@@ -117,7 +119,7 @@ def delete_item(
     return Message(message="Item deleted successfully")
 
 
-@router.post("/move/{item_id}_{new_location}", response_model=Location)
+@router.put("/move/{item_id}_{new_location}", response_model=Location)
 def move_item(
     *,
     session: SessionDep,
@@ -153,6 +155,32 @@ def move_item(
     session.refresh(item)
     return location
 
+@router.put("/change_status/{item_id}_{new_status}", response_model=ItemPublic)
+def change_item_status(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    item_id: uuid.UUID,
+    new_status: ItemStatus,
+) -> Any:
+    """
+    Change the status of an item.
+    """
+    item = session.get(Item, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    log = ItemLog(
+        message=f"Item status changed from {item.status.value} to {new_status.value}.",
+        operator_id=current_user.id,
+        item_id=item.id,
+    )
+    item.status = new_status
+    session.add(item)
+    session.add(log)
+    session.commit()
+    session.refresh(item)
+    return ItemPublic.model_validate(item)
 
 @router.get("/logs/{item_id}", response_model=ItemLogsPublic)
 def read_item_logs(
@@ -214,3 +242,10 @@ def get_types(session: SessionDep) -> list[str]:
     Retrieve item types.
     """
     return item_types
+
+@router.get("/statuses/", response_model=list[str])
+def get_statuses(session: SessionDep) -> list[str]:
+    """
+    Retrieve item statuses.
+    """
+    return item_statuses
